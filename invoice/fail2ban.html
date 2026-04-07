@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fail2Ban Monitor</title>
+  <style>
+    :root {
+      --bg:#f5f1e8;
+      --panel:#fffaf1;
+      --panel-strong:#fff;
+      --ink:#1f2933;
+      --muted:#6b7280;
+      --line:#dbcdb4;
+      --accent:#a44b18;
+      --accent-2:#d97706;
+      --good:#166534;
+      --warn:#b45309;
+      --bad:#b91c1c;
+      --shadow:0 14px 40px rgba(74, 42, 12, .12);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      color:var(--ink);
+      font-family:Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(900px 420px at 10% 0%, rgba(217,119,6,.18), transparent 55%),
+        radial-gradient(900px 420px at 100% 0%, rgba(164,75,24,.12), transparent 60%),
+        linear-gradient(180deg, #f3ecdf 0%, var(--bg) 100%);
+    }
+    .wrap { max-width:1180px; margin:0 auto; padding:32px 18px 48px; }
+    .hero {
+      display:flex;
+      justify-content:space-between;
+      gap:18px;
+      align-items:flex-end;
+      margin-bottom:20px;
+    }
+    h1 {
+      margin:0;
+      font-size:clamp(28px, 5vw, 46px);
+      letter-spacing:.02em;
+    }
+    .sub {
+      margin-top:8px;
+      max-width:760px;
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.5;
+    }
+    .toolbar, .grid, .log-grid { display:grid; gap:16px; }
+    .toolbar { grid-template-columns:2fr 1fr auto auto; margin-bottom:18px; }
+    .grid { grid-template-columns:repeat(4, minmax(0, 1fr)); margin-bottom:18px; }
+    .log-grid { grid-template-columns:1.2fr .8fr; }
+    .card {
+      background:rgba(255,250,241,.92);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:18px;
+      backdrop-filter:blur(8px);
+    }
+    .stat-label {
+      color:var(--muted);
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+    }
+    .stat-value {
+      margin-top:8px;
+      font-size:34px;
+      font-weight:700;
+      color:var(--accent);
+    }
+    .small {
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+    input, button {
+      width:100%;
+      border-radius:14px;
+      border:1px solid var(--line);
+      padding:12px 14px;
+      font:inherit;
+    }
+    input { background:#fffdf8; }
+    button {
+      cursor:pointer;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#fff;
+      font-weight:700;
+    }
+    button.secondary {
+      background:#fff8ed;
+      color:var(--accent);
+    }
+    .jails {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+    .pill {
+      display:inline-block;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      background:#fff7e8;
+      color:var(--accent);
+    }
+    .danger { color:var(--bad); }
+    .warning { color:var(--warn); }
+    .good { color:var(--good); }
+    .list, pre {
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-family:"Courier New", monospace;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .event-list {
+      display:grid;
+      gap:10px;
+      max-height:420px;
+      overflow:auto;
+    }
+    .event-item {
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fffdf8;
+      padding:12px;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .head-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    @media (max-width: 960px) {
+      .toolbar, .grid, .log-grid { grid-template-columns:1fr; }
+      .hero { display:block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <h1>Fail2Ban Monitor</h1>
+        <div class="sub">Dashboard ringan untuk melihat jail aktif, total gagal login, IP yang sedang diblokir, dan event ban terbaru dari server ini.</div>
+      </div>
+      <div class="pill" id="generatedAt">Belum dimuat</div>
+    </section>
+
+    <section class="toolbar">
+      <input id="token" type="password" placeholder="Masukkan FAIL2BAN_MONITOR_TOKEN" />
+      <div class="card small" id="statusText">Token belum diisi. Data belum dimuat.</div>
+      <button id="saveBtn" class="secondary" type="button">Simpan Token</button>
+      <button id="refreshBtn" type="button">Refresh</button>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <div class="stat-label">Jail Aktif</div>
+        <div class="stat-value" id="jailCount">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">IP Terbanned</div>
+        <div class="stat-value danger" id="bannedNow">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Total Ban</div>
+        <div class="stat-value warning" id="totalBans">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Total Failed</div>
+        <div class="stat-value" id="totalFailed">0</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="head-row">
+        <h2>Jail</h2>
+        <span class="small">Ringkasan per jail</span>
+      </div>
+      <div class="jails" id="jails"></div>
+    </section>
+
+    <section class="log-grid">
+      <div class="card">
+        <div class="head-row">
+          <h2>Event Ban Terkini</h2>
+          <span class="small">Diambil dari `fail2ban.log`</span>
+        </div>
+        <div class="event-list" id="events"></div>
+      </div>
+      <div class="card">
+        <div class="head-row">
+          <h2>Tail Log</h2>
+          <span class="small">80 baris terakhir</span>
+        </div>
+        <pre id="logTail" class="list">Belum ada data.</pre>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const tokenInput = document.getElementById('token');
+    const statusText = document.getElementById('statusText');
+    const generatedAt = document.getElementById('generatedAt');
+    const jailCount = document.getElementById('jailCount');
+    const bannedNow = document.getElementById('bannedNow');
+    const totalBans = document.getElementById('totalBans');
+    const totalFailed = document.getElementById('totalFailed');
+    const jailsEl = document.getElementById('jails');
+    const eventsEl = document.getElementById('events');
+    const logTailEl = document.getElementById('logTail');
+
+    const storageKey = 'fail2ban_monitor_token';
+    tokenInput.value = localStorage.getItem(storageKey) || '';
+
+    function setStatus(text, cls = '') {
+      statusText.className = `card small ${cls}`.trim();
+      statusText.textContent = text;
+    }
+
+    function renderJails(jails) {
+      if (!jails.length) {
+        jailsEl.innerHTML = '<div class="card small">Belum ada jail aktif.</div>';
+        return;
+      }
+
+      jailsEl.innerHTML = jails.map((jail) => `
+        <article class="card">
+          <div class="head-row">
+            <strong>${jail.name}</strong>
+            <span class="pill">${jail.bannedCurrent} banned</span>
+          </div>
+          <div class="small">Failed sekarang: <strong>${jail.failedCurrent}</strong></div>
+          <div class="small">Total failed: <strong>${jail.failedTotal}</strong></div>
+          <div class="small">Total ban: <strong>${jail.bannedTotal}</strong></div>
+          <div class="small">Log: ${jail.files.join(', ') || '-'}</div>
+          <div class="small">IP diblokir: ${jail.bannedIPs.join(', ') || '-'}</div>
+        </article>
+      `).join('');
+    }
+
+    function renderEvents(events) {
+      if (!events.length) {
+        eventsEl.innerHTML = '<div class="event-item">Belum ada event ban/unban terbaru.</div>';
+        return;
+      }
+      eventsEl.innerHTML = events.map((line) => `<div class="event-item">${line}</div>`).join('');
+    }
+
+    async function loadData() {
+      const token = tokenInput.value.trim();
+      if (!token) {
+        setStatus('Isi token monitoring dulu.', 'warning');
+        return;
+      }
+
+      setStatus('Memuat data fail2ban...');
+      try {
+        const res = await fetch('/api/admin/fail2ban/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Gagal memuat data.');
+
+        const totalFailedValue = data.jails.reduce((sum, item) => sum + (item.failedTotal || 0), 0);
+        const totalBansValue = data.jails.reduce((sum, item) => sum + (item.bannedTotal || 0), 0);
+        const bannedNowValue = data.jails.reduce((sum, item) => sum + (item.bannedCurrent || 0), 0);
+
+        generatedAt.textContent = `Updated ${new Date(data.generatedAt).toLocaleString('id-ID')}`;
+        jailCount.textContent = String(data.jailCount || 0);
+        bannedNow.textContent = String(bannedNowValue);
+        totalBans.textContent = String(totalBansValue);
+        totalFailed.textContent = String(totalFailedValue);
+        renderJails(data.jails || []);
+        renderEvents(data.recentEvents || []);
+        logTailEl.textContent = (data.logTail || []).join('\n') || 'Log kosong.';
+        setStatus('Data berhasil dimuat.', 'good');
+      } catch (error) {
+        setStatus(error.message, 'danger');
+      }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      localStorage.setItem(storageKey, tokenInput.value.trim());
+      setStatus('Token disimpan di browser ini.', 'good');
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+    if (tokenInput.value.trim()) {
+      loadData();
+    }
+  </script>
+</body>
+</html>

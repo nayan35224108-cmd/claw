@@ -1,0 +1,85 @@
+:root{--crab-dark:#7a0f18;--crab:#c62828;--crab-soft:#e35d5b;--crab-bg:#fff3f2;--text:#2a1010}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:linear-gradient(180deg,var(--crab-bg),#fff);color:var(--text)}
+.container{max-width:1080px;margin:auto;padding:1rem}.site-header{background:linear-gradient(90deg,var(--crab-dark),var(--crab));color:#fff;box-shadow:0 6px 16px rgba(122,15,24,.25)}
+.nav-wrap{display:flex;align-items:center;justify-content:space-between}.logo{color:#fff;text-decoration:none;font-weight:800;display:flex;align-items:center;gap:8px}
+.menu-toggle{background:#8f1a24;color:#fff;border:0;padding:.5rem .7rem;border-radius:10px}.nav{display:none;flex-direction:column;gap:.5rem}.nav.show{display:flex}
+.nav a{color:#fff;text-decoration:none;padding:.45rem .6rem;display:block;border-radius:8px}.nav a:hover{background:rgba(255,255,255,.14)}.nav-item{position:relative}
+.dropdown{display:none;position:static;background:#8f1a24;border-radius:10px;padding:4px}.nav-item:hover .dropdown{display:block}
+.content{background:#fff;border:1px solid #ffd3d1;padding:1rem;border-radius:14px;box-shadow:0 8px 20px rgba(198,40,40,.08)}.content a{color:var(--crab)}footer small{color:#6b2b2b}
+@media (min-width:768px){.menu-toggle{display:none}.nav{display:flex !important;flex-direction:row;align-items:center}.dropdown{position:absolute;min-width:200px}}
+
+/* Two-column frontend layout */
+.two-col-layout{display:grid;grid-template-columns:3fr 1fr;gap:1rem;align-items:start}
+.main-col{min-width:0}
+.sidebar-col{min-width:0}
+.sidebar-box h3{margin-top:0}
+.latest-list{padding-left:1rem;margin:0}
+.latest-list li{margin:.4rem 0}
+@media (max-width: 900px){.two-col-layout{grid-template-columns:1fr}}
+
+/* Homepage sales blocks */
+.hero{padding:8px 0 4px}
+.hero h1{margin:.2rem 0 .4rem;font-size:2rem}
+.tagline{font-size:1.05rem;opacity:.95}
+.service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.service-card{background:rgba(255,255,255,.88);border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:12px}
+.cta-btn{display:inline-block;padding:.65rem 1rem;border-radius:10px;text-decoration:none;font-weight:700}
+.site-header .cta-btn{color:#fff}
+@media (max-width: 900px){.service-grid{grid-template-columns:1fr}}
+
+/* Responsive media inside post/page content */
+.content img{max-width:100% !important;height:auto !important;display:block}
+.content iframe,.content video{max-width:100%;width:100%}
+.content{overflow-wrap:anywhere}
+
+/* Accordion for service explanation */
+.faq-acc details{border:1px solid rgba(0,0,0,.12);border-radius:10px;background:rgba(255,255,255,.8);margin:.55rem 0;overflow:hidden}
+.faq-acc summary{cursor:pointer;padding:.75rem .9rem;list-style:none}
+.faq-acc details[open] summary{border-bottom:1px solid rgba(0,0,0,.08)}
+.faq-acc details > div{padding:.65rem .9rem .8rem}
+
+/* Enhanced accordion style */
+.faq-acc{display:grid;gap:10px;margin-top:.4rem}
+.faq-acc details{
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85));
+  box-shadow:0 6px 16px rgba(0,0,0,.06);
+  transition:all .2s ease;
+}
+.faq-acc details:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(0,0,0,.08)}
+.faq-acc summary{
+  cursor:pointer;
+  padding:.85rem 1rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  list-style:none;
+}
+.faq-acc summary::-webkit-details-marker{display:none}
+.faq-acc summary::after{
+  content:'+';
+  font-size:1.2rem;
+  line-height:1;
+  opacity:.8;
+}
+.faq-acc details[open] summary::after{content:'−'}
+.faq-acc details[open] summary{border-bottom:1px dashed rgba(0,0,0,.15)}
+.faq-acc details > div{padding:.75rem 1rem 1rem}
+.faq-acc details > div ul{margin:.3rem 0 .2rem;padding-left:1.1rem}
+.faq-acc details > div li{margin:.35rem 0}
+
+/* Pretty list styling */
+.content ul,.content ol{padding-left:1.1rem;margin:.55rem 0 1rem}
+.content li{margin:.45rem 0;line-height:1.55}
+.content ul li{list-style:none;position:relative;padding-left:1.1rem}
+.content ul li::before{content:'🦀';position:absolute;left:0;top:.02rem;font-size:.78rem;opacity:.9}
+.service-card ul{margin:.5rem 0 .8rem;padding-left:0}
+.service-card ul li{list-style:none;position:relative;padding-left:1.15rem;margin:.42rem 0}
+.service-card ul li::before{content:'✓';position:absolute;left:0;top:0;font-weight:700;opacity:.85}
+
+/* Different background per package card */
+.service-grid .service-card:nth-child(1){background:linear-gradient(180deg,#fff9ec,#fff3d6);border-color:#f5ddb0}
+.service-grid .service-card:nth-child(2){background:linear-gradient(180deg,#eef7ff,#deefff);border-color:#b9dcff}
+.service-grid .service-card:nth-child(3){background:linear-gradient(180deg,#f3f0ff,#e7ddff);border-color:#cfc1ff}

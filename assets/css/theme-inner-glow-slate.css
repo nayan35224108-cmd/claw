@@ -1,0 +1,6 @@
+@import url('/assets/css/theme-inner-glow.css');
+:root{--primary:#0f766e;--primary-dark:#134e4a;--secondary:#334155;--bg:#f1f5f9;--text:#0f172a;--muted:#334155}
+body{background:linear-gradient(180deg,#eef2f7 0%,#ffffff 38%,#f8fafc 100%)}
+.site-header{background:linear-gradient(120deg,var(--primary-dark),var(--primary))}
+.cta-btn{background:linear-gradient(135deg,#334155,#0f172a)}
+:root{--hero-mask-start:rgba(15,23,42,.84);--hero-mask-end:rgba(15,118,110,.78)}

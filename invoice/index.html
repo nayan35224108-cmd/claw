@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Generator</title>
+  <style>
+    :root { --primary:#1d7fd6; --primary-dark:#0f5ca0; --bg:#f0f9ff; --bg-2:#e0f2fe; --text:#0b3558; --muted:#256b9f; --line:#b6ddf7; }
+    * { box-sizing:border-box; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; }
+    body { margin:0; background:radial-gradient(1200px 500px at 10% 0%, #dff4ff 0%, transparent 60%), linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%); color:var(--text); }
+    .wrap { max-width:1120px; margin:28px auto; padding:0 16px; display:grid; grid-template-columns:390px 1fr; gap:18px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 12px 30px rgba(29,127,214,.14); }
+    h1 { font-size:20px; margin:0 0 12px; color:var(--primary-dark); }
+    h2 { font-size:16px; margin:14px 0 10px; color:var(--primary-dark); }
+    label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+    input, textarea, button { width:100%; padding:10px 11px; border-radius:12px; border:1px solid #b6ddf7; background:#fff; }
+    input:focus, textarea:focus { outline:none; border-color:#1d7fd6; box-shadow:0 0 0 3px rgba(29,127,214,.16); }
+    textarea { min-height:64px; resize:vertical; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .items { margin-top:8px; }
+    .item { display:grid; grid-template-columns:2fr .8fr .8fr auto; gap:8px; margin-bottom:8px; }
+    .btn { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; border-color:var(--primary); cursor:pointer; font-weight:600; }
+    .btn:hover { filter:brightness(1.03); }
+    .btn-ghost { background:#fff; color:var(--primary-dark); border-color:#9cccf0; }
+    .btn-danger { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; width:auto; padding:0 10px; }
+    .invoice { background:#fff; border:1px solid var(--line); border-radius:16px; padding:24px; box-shadow:0 10px 28px rgba(15,23,42,.08); }
+    .top { display:flex; justify-content:space-between; gap:16px; }
+    .muted { color:var(--muted); font-size:13px; }
+    table { width:100%; border-collapse:collapse; margin-top:16px; }
+    th, td { border-bottom:1px solid #e2e8f0; padding:10px 6px; text-align:left; font-size:14px; }
+    th { color:var(--primary-dark); background:#eff6ff; }
+    tbody tr:hover td { background:#f4faff; }
+    .right { text-align:right; }
+    .totals { margin-top:12px; max-width:320px; margin-left:auto; }
+    .totals .line { display:flex; justify-content:space-between; padding:6px 0; }
+    .totals .grand { font-size:18px; font-weight:700; border-top:1px solid #cbd5e1; margin-top:4px; padding-top:10px; }
+    .history-wrap{max-width:1120px;margin:0 auto 28px;padding:0 16px}
+    .history-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .btn-sm{width:auto;padding:6px 10px;border-radius:10px;font-size:12px}
+    .status-pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eff6ff;color:var(--primary-dark);border:1px solid #b6ddf7;font-size:12px}
+    @media print {
+      @page { margin: 2cm 3cm 2cm 3cm; }
+      body { background:#fff; }
+      .no-print { display:none !important; }
+      .wrap { display:block; margin:0; max-width:none; padding:0; }
+      .invoice { border:none; padding:0; box-shadow:none; }
+    }
+    @media (max-width: 920px){ .wrap { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card no-print">
+      <h1>Invoice Generator</h1>
+      <div class="row">
+        <div>
+          <label>No. Invoice</label>
+          <input id="invoiceNo" value="INV-001" />
+        </div>
+        <div>
+          <label>Tanggal</label>
+          <input id="invoiceDate" type="date" />
+        </div>
+      </div>
+
+      <h2>Dari</h2>
+      <input id="fromName" placeholder="Nama Bisnis" value="PJ Digital" />
+      <textarea id="fromAddress" placeholder="Alamat / kontak">Sembungharjo RT 03 RW 02 Genuk, Semarang
+admin@pjdigital.top</textarea>
+
+      <h2>Untuk</h2>
+      <input id="toName" placeholder="Nama Klien" />
+      <input id="toEmail" type="email" placeholder="Email Klien" />
+      <textarea id="toAddress" placeholder="Alamat klien"></textarea>
+
+      <h2>Item</h2>
+      <div id="items" class="items"></div>
+      <button type="button" class="btn-ghost" onclick="addItem()">+ Tambah Item</button>
+
+      <!-- pajak & diskon dihilangkan sesuai request -->
+
+      <h2>Catatan</h2>
+      <textarea id="notes" placeholder="Terima kasih atas kerjasamanya."></textarea>
+
+      <div class="row" style="margin-top:12px">
+        <button class="btn" type="button" onclick="renderInvoice()">Generate</button>
+        <button class="btn-ghost" type="button" onclick="window.print()">Print / Save PDF</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" type="button" onclick="saveInvoice()">Simpan Invoice</button>
+        <button class="btn-ghost" type="button" onclick="sendCurrentInvoiceEmail()">Kirim via Email</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn-ghost" type="button" onclick="loadHistory()">Riwayat Invoice</button>
+        <button class="btn-ghost" type="button" onclick="scrollToHistory()">Buka Tabel Riwayat</button>
+      </div>
+    </div>
+
+    <div class="invoice" id="preview">
+      <div class="top">
+        <div>
+          <img src="/invoice/logo-pjdigita.png" alt="Logo PJ Digital" style="width:64px;height:64px;object-fit:contain;margin-bottom:8px;display:block" />
+          <h2 style="margin-top:0">INVOICE</h2>
+          <div class="muted" id="pvFrom"></div>
+        </div>
+        <div class="right">
+          <div><strong id="pvNo">INV-001</strong></div>
+          <div class="muted" id="pvDate"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="muted">Billed to:</div>
+        <div id="pvTo"></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Deskripsi</th><th class="right">Qty</th><th class="right">Harga</th><th class="right">Jumlah</th></tr>
+        </thead>
+        <tbody id="pvItems"></tbody>
+      </table>
+
+      <div class="totals">
+        <div class="line"><span>Subtotal</span><span id="pvSubtotal">Rp 0</span></div>
+        <div class="line grand"><span>Total</span><span id="pvTotal">Rp 0</span></div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div class="muted">Catatan:</div>
+        <div id="pvNotes">-</div>
+      </div>
+
+      <div style="margin-top:18px;display:flex;justify-content:flex-end">
+        <div style="text-align:center;min-width:200px">
+          <div id="pvCityDate" class="muted" style="margin-bottom:8px">Semarang, -</div>
+          <img id="pvQr" alt="QR Code" style="width:110px;height:110px;object-fit:contain;border:1px solid #b6ddf7;border-radius:8px;padding:6px;background:#fff" />
+          <div style="margin-top:8px;font-weight:700;color:var(--primary-dark)">PJ DIGITAL</div>
+        </div>
+      </div>
+
+      <div class="no-print" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn-ghost btn-sm" type="button" onclick="saveInvoice()">Simpan</button>
+        <button class="btn btn-sm" type="button" onclick="sendCurrentInvoiceEmail()">Kirim via Email</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="history-wrap no-print" id="historySection">
+    <div class="card">
+      <h2 style="margin-top:0">Riwayat Invoice</h2>
+      <div class="muted">Daftar invoice tersimpan</div>
+      <div style="overflow:auto;margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>No. Invoice</th>
+              <th>Tanggal</th>
+              <th>Klien</th>
+              <th class="right">Total</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="historyRows">
+            <tr><td colspan="6" class="muted">Belum ada data.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fmt = new Intl.NumberFormat('id-ID');
+    const rupiah = (n) => `Rp ${fmt.format(Math.max(0, Math.round(n||0)))}`;
+
+    const API_CANDIDATES = [
+      `${window.location.origin}/api`,
+      `${window.location.protocol}//${window.location.hostname}:3001/api`,
+      `http://${window.location.hostname}:3001/api`,
+    ];
+    let API_BASE = API_CANDIDATES[0];
+
+    const parseJSONSafe = (val, fallback) => {
+      try { return typeof val === 'string' ? JSON.parse(val) : (val ?? fallback); }
+      catch { return fallback; }
+    };
+
+    let currentInvoiceId = null;
+
+    async function resolveApiBase() {
+      for (const base of API_CANDIDATES) {
+        try {
+          const res = await fetch(`${base}/health`, { method: 'GET' });
+          if (res.ok) {
+            API_BASE = base;
+            return base;
+          }
+        } catch (_e) {}
+      }
+      return null;
+    }
+
+    async function apiFetch(path, options) {
+      if (!API_BASE) {
+        const found = await resolveApiBase();
+        if (!found) throw new Error('API invoice belum terhubung. Pastikan endpoint /api atau port 3001 aktif.');
+      }
+
+      try {
+        return await fetch(`${API_BASE}${path}`, options);
+      } catch (_e) {
+        const found = await resolveApiBase();
+        if (!found) throw new Error('Tidak bisa terhubung ke API invoice (network/CORS).');
+        return fetch(`${API_BASE}${path}`, options);
+      }
+    }
+
+    function itemRow(desc='', qty=1, price=0){
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <input placeholder="Deskripsi" value="${desc}">
+        <input type="number" min="0" step="1" value="${qty}">
+        <input type="number" min="0" step="1000" value="${price}">
+        <button type="button" class="btn-danger" title="Hapus">✕</button>
+      `;
+      div.querySelector('button').onclick = () => { div.remove(); renderInvoice(); };
+      div.querySelectorAll('input').forEach(i => i.oninput = renderInvoice);
+      return div;
+    }
+
+    function addItem(){
+      document.getElementById('items').appendChild(itemRow('Jasa',1,0));
+      renderInvoice();
+    }
+
+    function renderInvoice(){
+      const no = document.getElementById('invoiceNo').value || '-';
+      const date = document.getElementById('invoiceDate').value || '-';
+      const from = `${document.getElementById('fromName').value || ''}\n${document.getElementById('fromAddress').value || ''}`.trim();
+      const to = `${document.getElementById('toName').value || ''}\n${document.getElementById('toAddress').value || ''}`.trim();
+      const taxPct = 0;
+      const discount = 0;
+
+      document.getElementById('pvNo').textContent = no;
+      document.getElementById('pvDate').textContent = date;
+      document.getElementById('pvFrom').innerHTML = from.replaceAll('\n','<br>') || '-';
+      document.getElementById('pvTo').innerHTML = to.replaceAll('\n','<br>') || '-';
+
+      const tbody = document.getElementById('pvItems');
+      tbody.innerHTML = '';
+      let subtotal = 0;
+
+      document.querySelectorAll('#items .item').forEach(row => {
+        const [d,q,p] = row.querySelectorAll('input');
+        const desc = d.value || '-';
+        const qty = parseFloat(q.value || '0');
+        const price = parseFloat(p.value || '0');
+        const amount = qty * price;
+        subtotal += amount;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${desc}</td><td class="right">${qty}</td><td class="right">${rupiah(price)}</td><td class="right">${rupiah(amount)}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      const tax = subtotal * (taxPct/100);
+      const total = subtotal + tax - discount;
+
+      document.getElementById('pvSubtotal').textContent = rupiah(subtotal);
+      document.getElementById('pvTotal').textContent = rupiah(total);
+      document.getElementById('pvNotes').textContent = document.getElementById('notes').value || '-';
+
+      const now = new Date();
+      const tanggalIndo = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+      document.getElementById('pvCityDate').textContent = `Semarang, ${tanggalIndo}`;
+
+      const qrText = encodeURIComponent(`Invoice ${no} | Total ${total}`);
+      document.getElementById('pvQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${qrText}`;
+    }
+
+    function collectInvoicePayload() {
+      const tanggal = document.getElementById('invoiceDate').value || null;
+      const pengirim = {
+        name: document.getElementById('fromName').value || '',
+        address: document.getElementById('fromAddress').value || '',
+      };
+      const klien = {
+        name: document.getElementById('toName').value || '',
+        email: document.getElementById('toEmail').value || '',
+        address: document.getElementById('toAddress').value || '',
+      };
+
+      const items = Array.from(document.querySelectorAll('#items .item')).map(row => {
+        const [d,q,p] = row.querySelectorAll('input');
+        return {
+          desc: d.value || '-',
+          qty: Number(q.value || 0),
+          price: Number(p.value || 0),
+        };
+      });
+
+      const subtotal = items.reduce((acc, it) => acc + (it.qty * it.price), 0);
+      const taxPct = 0;
+      const pajak = subtotal * (taxPct / 100);
+      const diskon = 0;
+      const total = subtotal + pajak - diskon;
+
+      return {
+        tanggal,
+        pengirim,
+        klien,
+        items,
+        subtotal,
+        pajak,
+        diskon,
+        total,
+        status: 'draft',
+      };
+    }
+
+    async function saveInvoice() {
+      try {
+        const payload = collectInvoicePayload();
+        const res = await apiFetch('/invoice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Gagal simpan invoice');
+        }
+        const inv = await res.json();
+        currentInvoiceId = inv.id;
+        if (inv.no_invoice) document.getElementById('invoiceNo').value = inv.no_invoice;
+        renderInvoice();
+        await loadHistory();
+        alert('Invoice berhasil disimpan.');
+      } catch (e) {
+        alert(e.message || 'Gagal simpan invoice');
+      }
+    }
+
+    async function sendCurrentInvoiceEmail() {
+      try {
+        if (!currentInvoiceId) {
+          await saveInvoice();
+        }
+        if (!currentInvoiceId) return;
+
+        const to = (document.getElementById('toEmail').value || '').trim();
+        if (!to) {
+          alert('Isi Email Klien dulu.');
+          return;
+        }
+
+        const res = await apiFetch(`/invoice/${currentInvoiceId}/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'Gagal kirim email');
+        alert('Email invoice berhasil dikirim.');
+      } catch (e) {
+        alert(e.message || 'Gagal kirim email');
+      }
+    }
+
+    function fillFormFromInvoice(inv) {
+      const pengirim = parseJSONSafe(inv.pengirim, {});
+      const klien = parseJSONSafe(inv.klien, {});
+      const items = parseJSONSafe(inv.items, []);
+      currentInvoiceId = inv.id || null;
+
+      document.getElementById('invoiceNo').value = inv.no_invoice || '';
+      document.getElementById('invoiceDate').value = inv.tanggal || '';
+      document.getElementById('fromName').value = pengirim.name || '';
+      document.getElementById('fromAddress').value = pengirim.address || '';
+      document.getElementById('toName').value = klien.name || '';
+      document.getElementById('toEmail').value = klien.email || '';
+      document.getElementById('toAddress').value = klien.address || '';
+      // pajak & diskon dihapus dari UI
+
+      const wrap = document.getElementById('items');
+      wrap.innerHTML = '';
+      (Array.isArray(items) && items.length ? items : [{ desc: 'Jasa', qty: 1, price: 0 }]).forEach(it => {
+        wrap.appendChild(itemRow(it.desc || it.description || 'Item', Number(it.qty || 0), Number(it.price || 0)));
+      });
+      renderInvoice();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function viewInvoice(id) {
+      const res = await apiFetch(`/invoice/${id}`);
+      if (!res.ok) return alert('Gagal ambil detail invoice');
+      const inv = await res.json();
+      fillFormFromInvoice(inv);
+    }
+
+    async function printInvoiceById(id) {
+      await viewInvoice(id);
+      setTimeout(() => window.print(), 150);
+    }
+
+    async function deleteInvoice(id) {
+      if (!confirm('Hapus invoice ini?')) return;
+      const res = await apiFetch(`/invoice/${id}`, { method: 'DELETE' });
+      if (!res.ok) return alert('Gagal menghapus invoice');
+      await loadHistory();
+    }
+
+    async function loadHistory() {
+      const tbody = document.getElementById('historyRows');
+      tbody.innerHTML = '<tr><td colspan="6" class="muted">Memuat...</td></tr>';
+      try {
+        const res = await apiFetch('/invoices');
+        if (!res.ok) throw new Error('fetch failed');
+        const rows = await res.json();
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="muted">Belum ada data.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = rows.map(r => {
+          const klien = parseJSONSafe(r.klien, {});
+          return `
+            <tr>
+              <td>${r.no_invoice || '-'}</td>
+              <td>${r.tanggal || '-'}</td>
+              <td>${klien.name || '-'}</td>
+              <td class="right">${rupiah(r.total || 0)}</td>
+              <td><span class="status-pill">${r.status || 'draft'}</span></td>
+              <td>
+                <div class="history-actions">
+                  <button class="btn-ghost btn-sm" onclick="viewInvoice(${r.id})">Lihat Detail</button>
+                  <button class="btn-ghost btn-sm" onclick="printInvoiceById(${r.id})">Cetak</button>
+                  <button class="btn-danger btn-sm" onclick="deleteInvoice(${r.id})">Hapus</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (_e) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">Gagal memuat riwayat. Pastikan API aktif.</td></tr>';
+      }
+    }
+
+    function scrollToHistory() {
+      document.getElementById('historySection')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById('invoiceDate').valueAsDate = new Date();
+    addItem();
+    resolveApiBase().then(() => loadHistory());
+  </script>
+</body>
+</html>
